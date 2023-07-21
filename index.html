@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera</title>
+
+</head>
+
+<body>
+    <style>
+        *{
+            margin: 0;
+            pad: 0;
+        }
+        body {
+            background-image: url(https://assets-global.website-files.com/6009ec8cda7f305645c9d91b/6151cdfe606aa08dbbc6965c_color-combinations_bloghero-p-2000.jpeg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+          }
+          #camera-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 100%;
+          }
+          #videoElement {
+            margin-top: 20px;
+            width: 100%;
+            height: auto;
+            margin-bottom: 10px;
+            border: 2px solid black;
+            border-radius: 7px;
+          }
+          #controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+          }
+          
+         
+          #gallery {
+            display: flex;
+            flex-wrap: wrap;
+            max-width: 100%;
+            justify-content: center;
+          }
+          
+          button {
+            margin: 0 5px;
+            background-color: #4CAF50; 
+            color: white;
+          }
+         
+          h1{
+            font-size: 30px;
+          }
+          .media-item {
+            margin: 5px;
+            border: 2px solid #ccc;
+            max-width: 150px;
+          }
+          .media-item img, .media-item video {
+            width: 100%;
+            height: auto;
+          }
+        
+          /* Media Query for Phone Screens (up to 400px) */
+          @media (max-width: 400px) {
+            #camera-container {
+              width: 100%;
+              padding: 10px;
+            }
+            .media-item {
+              max-width: 100px;
+            }
+          }
+    </style>
+
+    <div id="camera-container">
+        <h1>Welcome to Abinash's Camera</h1>
+        <video id="videoElement" autoplay></video>
+        <div id="controls">
+            <button id="startBtn">Start Camera</button>
+            <button id="stopBtn" disabled>Stop Camera</button>
+            <button id="captureBtn">Capture Photo</button>
+            <button id="recordBtn">Record Video</button>
+            <button id="stopRecordBtn" disabled>Stop Recording</button>
+        </div>
+        <div id="gallery"></div>
+    </div>
+
+    <script >
+        const videoElement = document.getElementById('videoElement');
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const captureBtn = document.getElementById('captureBtn');
+const recordBtn = document.getElementById('recordBtn');
+const stopRecordBtn = document.getElementById('stopRecordBtn');
+const gallery = document.getElementById('gallery');
+
+let stream;
+let mediaRecorder;
+let recordedChunks = [];
+
+// Start the camera
+startBtn.addEventListener('click', async () => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    videoElement.srcObject = stream;
+    stopBtn.disabled = false;
+    startBtn.disabled = true;
+  } catch (err) {
+    console.error('Error accessing the camera:', err);
+  }
+});
+
+// Stop the camera
+stopBtn.addEventListener('click', () => {
+  if (stream) {
+    const tracks = stream.getTracks();
+    tracks.forEach((track) => track.stop());
+    videoElement.srcObject = null;
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+  }
+});
+
+// Capture a photo
+captureBtn.addEventListener('click', () => {
+  if (stream) {
+    const canvas = document.createElement('canvas');
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
+    const context = canvas.getContext('2d');
+    context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+    const img = new Image();
+    img.src = canvas.toDataURL();
+    const mediaItem = document.createElement('div');
+    mediaItem.classList.add('media-item');
+    mediaItem.appendChild(img);
+    gallery.appendChild(mediaItem);
+  }
+});
+
+// Record a video
+recordBtn.addEventListener('click', () => {
+  if (stream) {
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        recordedChunks.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = () => {
+      const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
+      const videoURL = URL.createObjectURL(videoBlob);
+
+      const video = document.createElement('video');
+      video.controls = true;
+      video.src = videoURL;
+      const mediaItem = document.createElement('div');
+      mediaItem.classList.add('media-item');
+      mediaItem.appendChild(video);
+      gallery.appendChild(mediaItem);
+    };
+
+    mediaRecorder.start();
+    recordBtn.disabled = true;
+    stopRecordBtn.disabled = false;
+  }
+});
+
+// Stop video recording
+stopRecordBtn.addEventListener('click', () => {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+    recordBtn.disabled = false;
+    stopRecordBtn.disabled = true;
+  }
+});
+
+    </script>
+
+</body>
+
+</html>
